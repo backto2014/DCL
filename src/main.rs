@@ -1,18 +1,35 @@
-use mini_redis::{client, Result};
+use tao::{
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+};
+use wry::WebViewBuilder;
 
-const URL: &str = "https://sober.vinegarhq.org/";
+fn main() -> wry::Result<()> {
+    let url = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "https://sober.vinegarhq.org/".to_owned());
 
+    let event_loop = EventLoop::new();
+    let window = WindowBuilder::new()
+        .with_title("DCL")
+        .with_inner_size(tao::dpi::LogicalSize::new(1280.0, 800.0))
+        .build(&event_loop)
+        .expect("falha ao criar a janela");
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let mut client = client::connect("127.0.0.1:6379").await?;
+    let _webview = WebViewBuilder::new().with_url(&url).build(&window)?;
 
-    client.set("hello", "world".into()).await?;
+    event_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Wait;
 
-    let result = client.get("hello").await?;
-
-    //println!("server retornou; result={:?}", result);
-
-    let html  = r#"<html><body><h1 class="titulo">Olá</h1><p>texto</p></body></html>"#;
-    Ok(())
+        if matches!(
+            event,
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            }
+        ) {
+            *control_flow = ControlFlow::Exit;
+        }
+    });
 }
